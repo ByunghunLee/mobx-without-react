@@ -1,43 +1,40 @@
-import { observable, reaction, computed, autorun } from 'mobx';
+import { observable, reaction, computed, autorun, action, transaction } from 'mobx';
 
-// Observable State 만들기
-const calculator = observable({
-    a: 1,
-    b: 2
+class GS25{
+    @observable basket = [];
+
+    @computed
+    get total(){
+        console.log("Calculating");
+        return this.basket.reduce((prev, curr) => prev + curr.price, 0);
+    }
+
+    @action
+    select(name, price){
+        this.basket.push({name, price});
+    }
+}
+/*
+decorate(GS25,{
+    basket: observable,
+    total: computed,
+    select: action
+});
+*/
+const gs25 = new GS25();
+autorun(() => gs25.total);
+autorun(() => {
+    if(gs25.basket.length > 0){
+        console.log(gs25.basket[gs25.basket.length - 1]);
+    }
 });
 
-// **** 특정 값이 바뀔 때 특정 작업 하기!
-reaction(
-    () => calculator.a,
-    (value, reaction) => {
-        console.log(`a 값이 ${value} 로 바뀌었네요!`);
-    }
-);
-
-reaction(
-    () => calculator.b,
-    value => {
-        console.log(`b 값이 ${value} 로 바뀌었네요!`);
-    }
-);
-
-// **** computed 로 특정 값 캐싱
-const sum = computed(() => {
-    console.log('계산중이예요!');
-    return calculator.a + calculator.b;
+transaction(() => {
+    gs25.select('물', 800);
+    gs25.select('라면', 1200);
+    gs25.select('루나', 1800);
+    gs25.select('삼다수', 300);
 });
 
-sum.observe(() => calculator.a); // a 값을 주시
-sum.observe(() => calculator.b); // b 값을 주시
+console.log(gs25.total);
 
-calculator.a = 10;
-calculator.b = 20;
-
-//**** 여러번 조회해도 computed 안의 함수를 다시 호출하지 않지만..
-console.log(sum.value);
-console.log(sum.value);
-
-
-// 내부의 값이 바뀌면 다시 호출 함
-calculator.a = 20;
-console.log(sum.value);
